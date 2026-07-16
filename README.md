@@ -1,3 +1,5 @@
+[![tests](https://github.com/egnaro9/evals-differential-oracle/actions/workflows/tests.yml/badge.svg)](https://github.com/egnaro9/evals-differential-oracle/actions/workflows/tests.yml)
+
 # Differential Oracle — evaluating logic you can't hand-check
 
 A tiny, runnable example of how I make agentic/game logic **prove its own
