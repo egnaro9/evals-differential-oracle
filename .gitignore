@@ -1,0 +1,5 @@
+__pycache__/
+*.py[cod]
+demo/src/
+site/
+.pytest_cache/

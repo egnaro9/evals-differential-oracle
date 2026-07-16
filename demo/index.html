@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="A differential oracle you can run: two independent implementations held to the same rules, plus an invariant checker. Plant the bug yourself and watch both nets catch it.">
+<title>evals-differential-oracle — run it yourself</title>
+<style>
+  :root {
+    --ink:#0e1316; --panel:#141c21; --raised:#1b252b;
+    --line:rgba(255,255,255,.09); --line-2:rgba(255,255,255,.05);
+    --fg:#dae2e4; --fg-dim:#8a989e; --fg-faint:#5e6c72;
+    --amber-ink:#f2a53c; --amber-soft:rgba(242,165,60,.13); --amber-line:rgba(242,165,60,.34);
+    --teal:#48c1ac; --teal-soft:rgba(72,193,172,.12);
+    --red:#f87171; --red-soft:rgba(248,113,113,.12);
+    --mono:ui-monospace,"SF Mono","JetBrains Mono","Cascadia Code",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--ink); color:var(--fg); font-family:var(--sans); font-size:16px; line-height:1.6;
+    -webkit-font-smoothing:antialiased; padding:0 20px 80px;
+    background-image:linear-gradient(var(--line-2) 1px,transparent 1px),linear-gradient(90deg,var(--line-2) 1px,transparent 1px);
+    background-size:34px 34px}
+  .col{max-width:900px; margin:0 auto}
+  a{color:var(--amber-ink); text-decoration:none}
+  code{font-family:var(--mono); color:var(--amber-ink); font-size:.92em}
+  header{padding:52px 0 26px; border-bottom:1px solid var(--line)}
+  .eye{font-family:var(--mono); font-size:12px; letter-spacing:.28em; text-transform:uppercase; color:var(--amber-ink); display:flex; align-items:center; gap:10px}
+  .eye::before{content:""; width:26px; height:1px; background:var(--amber-line)}
+  h1{font-family:var(--mono); font-weight:600; font-size:clamp(26px,5vw,40px); line-height:1.05; letter-spacing:-.02em; margin:14px 0 0}
+  .lede{color:var(--fg-dim); max-width:66ch; margin:16px 0 0}
+  .lede b{color:var(--fg)}
+  .status{display:flex; align-items:center; gap:10px; margin-top:20px; font-family:var(--mono); font-size:13px; color:var(--fg-dim);
+    border:1px solid var(--line); background:var(--panel); padding:10px 14px; border-radius:3px}
+  .dot{width:8px; height:8px; border-radius:50%; background:var(--amber-ink); animation:pulse 1.4s ease-in-out infinite; flex:none}
+  .status.ready .dot{background:var(--teal); animation:none}
+  .status.err .dot{background:var(--red); animation:none}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  section{padding:34px 0; border-bottom:1px solid var(--line)}
+  .label{font-family:var(--mono); font-size:11.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--amber-ink)}
+  h2{font-family:var(--mono); font-weight:600; font-size:clamp(19px,3vw,24px); margin:.5rem 0 0}
+  p.intro{color:var(--fg-dim); max-width:68ch}
+
+  .play{display:grid; grid-template-columns:minmax(220px,300px) 1fr; gap:26px; margin-top:20px; align-items:start}
+  @media (max-width:720px){ .play{grid-template-columns:1fr} }
+  #board{display:grid; gap:4px; background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:8px}
+  .cell{aspect-ratio:1; border:0; border-radius:3px; cursor:pointer; transition:transform .1s}
+  .cell:hover{transform:scale(1.07)}
+  .cell.empty{border:1px dashed var(--line)}
+  .boardnote{font-family:var(--mono); font-size:11px; color:var(--fg-faint); margin-top:9px; text-align:center}
+
+  .impl-row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .impl{background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:11px}
+  .impl.sab{border-color:var(--red)}
+  .ilab{font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--fg-faint)}
+  .ival{font-family:var(--mono); font-size:13px; margin-top:3px}
+  .net{border:1px solid var(--line); border-left:3px solid var(--line); border-radius:4px; padding:12px 14px; margin-top:10px; background:var(--panel)}
+  .net.ok{border-left-color:var(--teal)} .net.caught{border-left-color:var(--red); background:var(--red-soft)}
+  .nlab{font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--fg-faint)}
+  .nval{font-size:14px; margin-top:3px}
+  .net.ok .nval{color:var(--teal)} .net.caught .nval{color:var(--red)}
+  .nwhy{color:var(--fg-faint); font-size:12px; margin-top:5px}
+
+  .sabotage{display:flex; align-items:center; gap:10px; margin-top:14px; font-family:var(--mono); font-size:12.5px;
+    border:1px solid var(--line); background:var(--raised); padding:10px 13px; border-radius:3px}
+  .sabotage input{accent-color:var(--red); width:15px; height:15px; cursor:pointer}
+  #sabLabel{color:var(--fg-dim)}
+
+  button{font-family:var(--mono); font-size:13px; padding:11px 16px; border-radius:2px; cursor:pointer; margin:3px 4px 3px 0;
+    border:1px solid var(--amber-line); color:var(--amber-ink); background:var(--amber-soft); transition:background .15s}
+  button:hover:not(:disabled){background:var(--amber-ink); color:var(--ink)}
+  button:disabled{opacity:.45; cursor:not-allowed}
+  button.ghost{border-color:var(--line); color:var(--fg-dim); background:transparent}
+  button.ghost:hover:not(:disabled){color:var(--fg); border-color:var(--fg-dim); background:transparent}
+  select{font-family:var(--mono); font-size:12.5px; padding:10px; background:var(--raised); color:var(--fg); border:1px solid var(--line); border-radius:2px}
+
+  .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:8px; margin:12px 0}
+  .card{background:var(--raised); border:1px solid var(--line); border-radius:4px; padding:10px}
+  .card .k{font-family:var(--mono); font-size:9.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--fg-faint)}
+  .card .v{font-size:1.3rem; font-weight:650; margin-top:2px; font-family:var(--mono)}
+  .good{color:var(--teal)} .bad{color:var(--red)}
+  .fuzzbox{border:1px solid var(--line); border-left:3px solid var(--teal); border-radius:4px; padding:14px; background:var(--panel); margin-top:14px}
+  .fuzzbox.caught{border-left-color:var(--red)}
+  .fz-head{font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--fg-faint)}
+  .fz-verdict{font-size:14px; color:var(--fg-dim); margin-top:8px}
+  .thinking{font-family:var(--mono); font-size:13px; color:var(--fg-faint); margin-top:14px}
+  details{margin-top:9px} summary{font-family:var(--mono); font-size:11px; color:var(--fg-faint); cursor:pointer}
+  pre{font-family:var(--mono); font-size:11px; background:#0a0e11; border:1px solid var(--line); border-radius:3px;
+    padding:11px; overflow-x:auto; color:var(--fg-dim); max-height:220px}
+  .note{border-left:2px solid var(--amber-line); padding-left:14px; margin-top:18px; color:var(--fg-faint); font-size:13.5px; max-width:68ch}
+  .note b{color:var(--fg-dim)}
+  footer{padding:30px 0 0; color:var(--fg-faint); font-size:13.5px}
+</style>
+</head>
+<body>
+<div class="col">
+
+  <header>
+    <div class="eye">Live in your browser</div>
+    <h1>The differential oracle</h1>
+    <p class="lede">The hard part of testing game logic isn't writing tests — it's knowing whether your tests would notice if the logic broke. This is the answer I use: <b>write the logic twice, independently, and make the two halves agree.</b> Neither knows the rules; each only knows it must match the other. A third net — an invariant checker — judges the result directly. <b>Everything below is this repo's real Python, running in your browser.</b></p>
+    <div class="status" id="status"><span class="dot"></span><span id="statusText">Booting…</span></div>
+  </header>
+
+  <section>
+    <div class="label">// Part 1</div>
+    <h2>Break it yourself</h2>
+    <p class="intro">Click cells to change colours (0 = empty). Match-3 rules: a run of <b>3+</b> clears; a run of <b>4+</b> also earns one special gem. Both nets re-run on every click.</p>
+
+    <div class="play">
+      <div>
+        <div id="board"></div>
+        <div class="boardnote">click a cell to cycle its colour</div>
+        <button class="ghost" id="reset" disabled style="width:100%;margin-top:8px">reset to the demo board</button>
+      </div>
+
+      <div>
+        <div id="results"></div>
+        <div class="sabotage">
+          <input type="checkbox" id="sabotage" disabled>
+          <label for="sabotage" id="sabLabel">using the native implementation</label>
+        </div>
+        <div class="note" style="margin-top:12px"><b>Tick that box</b> to swap in the deliberately-wrong implementation — it awards a special for runs of <b>3+</b> when the rule is <b>4+</b>. Watch both nets light up independently. A safety net that can't catch a known bug isn't a safety net.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="label">// Part 2 — the claim, runnable</div>
+    <h2>Thousands of random boards</h2>
+    <p class="intro">My portfolio says the oracle runs both implementations over thousands of random boards and they never disagree. Don't take my word for it — <b>run it here</b>, then run it again against the buggy implementation and watch the disagreements pile up.</p>
+
+    <div>
+      <select id="fuzzN" aria-label="How many boards">
+        <option value="1000">1,000 boards</option>
+        <option value="5000" selected>5,000 boards</option>
+        <option value="9000">9,000 boards</option>
+        <option value="20000">20,000 boards</option>
+      </select>
+      <button id="fuzzGood" disabled>▶ Run react vs native</button>
+      <button id="fuzzBuggy" class="ghost" disabled>▶ Now run it against the buggy impl</button>
+    </div>
+    <div id="fuzzOut"></div>
+
+    <div class="note"><b>Why two different nets?</b> They fail differently. The differential oracle catches anything where the implementations diverge — including bugs nobody thought to write a rule for — but it's blind to a mistake made <i>identically</i> in both. The invariant checker can't be fooled that way, because it never consults an implementation at all; it only knows the rules. Neither is sufficient. Together they cover each other's blind spot.</div>
+  </section>
+
+  <footer>
+    <p>Running <a href="https://github.com/egnaro9/evals-differential-oracle">evals-differential-oracle</a> via <a href="https://pyodide.org">Pyodide</a>. The <code>src/</code> files are copied verbatim from <code>main</code> by CI and imported here — no port, no reimplementation. Locally: <code>git clone … && pytest -q</code>.</p>
+    <p>Built by <a href="https://egnaro9.github.io">Erik Hill</a> · this is the technique behind <a href="https://egnaro9.github.io/match3-engine/">match3-engine</a>, the real engine from a shipping game.</p>
+  </footer>
+
+</div>
+<script src="https://cdn.jsdelivr.net/pyodide/v314.0.2/full/pyodide.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

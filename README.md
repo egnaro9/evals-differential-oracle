@@ -2,6 +2,10 @@
 
 # Differential Oracle — evaluating logic you can't hand-check
 
+### ▶ [Run it in your browser](https://egnaro9.github.io/evals-differential-oracle/)
+
+No install. The demo fetches **this repo's actual `src/`** into [Pyodide](https://pyodide.org) and runs it: edit a board and watch both nets re-judge, tick one box to swap in the deliberately-wrong implementation, then fuzz **thousands of random boards** and watch react-vs-native hit *zero* disagreements — before running the same boards against the bug and watching both nets catch it.
+
 A tiny, runnable example of how I make agentic/game logic **prove its own
 correctness** — the core idea behind the eval layer of the autonomous
 development harness I built ([case study](https://github.com/egnaro9/agentic-dev-harness),
