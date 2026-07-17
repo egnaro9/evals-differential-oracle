@@ -34,7 +34,7 @@ them all by hand. So instead of trusting one implementation, I use two.
 ```bash
 pip install -r requirements.txt
 python run_demo.py      # a short walkthrough
-pytest -q               # differential + invariant tests over ~9k random boards
+pytest -q               # differential + invariant tests over 6,000 random boards
 ```
 
 *Built by Erik Hill — agentic systems engineer.*
